@@ -19,9 +19,9 @@ const SISTEM = "Bir Türk Re:Zero hayran sitesi için haber editörüsün. Yaln�
 export function istem(h) {
   return `Aşağıdaki haber ${h.kaynak} kaynağından (${h.dil === "ja" ? "Japonca" : "İngilizce"}). Re:Zero (Re:Zero kara Hajimeru Isekai Seikatsu) takip sitesi için:
 - ilgili: Haber gerçekten Re:Zero serisi hakkında mı (yalnızca adı geçen bir listede değil)?
-- baslik: Türkçe, en çok 90 karakter, haberin özü; özgün cümle, çeviri kokusu olmasın. Özel adları (kişi, etkinlik, mekân) doğru yaz, uydurma.
-- ozet: Türkçe 2-3 cümle, en çok 320 karakter; kaynağın cümlelerini kopyalama, kendi sözcüklerinle anlat; olmayan bilgi ekleme; spoiler (hikâye olayları) verme. Metin kısaysa kısa yaz.
-- kategori: Anime, Manga, Light Novel, Oyun, Etkinlik içinden en uygun tek değer (mağaza, kafe, sergi, sahne, konser etkinliktir).
+- baslik: Türkçe, en çok 90 karakter, haberin özü; özgün cümle, çeviri kokusu olmasın. Özel adları (kişi, etkinlik, mekân) yaygın Latin yazımıyla doğru yaz (ör. ラグーナテンボス = Laguna Ten Bosch), uydurma.
+- ozet: Türkçe 2-3 cümle, en çok 320 karakter; kaynağın cümlelerini kopyalama, kendi sözcüklerinle anlat; olmayan bilgi ekleme; spoiler (hikâye olayları) verme. Metin kısaysa yalnızca bilineni 1 cümleyle yaz; metnin kısa ya da eksik olduğunu, neyin belirtilmediğini ASLA söyleme. Yabancı terimleri Türkçeleştir (can badge = rozet, goods = ürün, acrylic stand = akrilik stand).
+- kategori: Anime, Manga, Light Novel, Oyun, Etkinlik içinden en uygun tek değer. Mağaza, kafe, sergi, sahne, konser, iş birliği etkinliktir. Re:Zero resmî anime sitesinden gelen görsel, bölüm, yayın, ürün haberleri aksi açıkça yazmadıkça Anime'dir; Light Novel yalnızca roman/cilt/yazarın kitabıyla ilgiliyse.
 - olay: Bu haberin anlattığı olayın kısa kimliği; küçük harf İngilizce, tireli, en çok 6 sözcük (ör. anime-season-5-announced, ln-volume-47-release). Aynı olayı anlatan başka kaynak aynı kimliği üretmeli.
 
 Başlık: ${h.baslik}
