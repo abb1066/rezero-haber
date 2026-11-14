@@ -1,0 +1,60 @@
+# Re:Zero haberleri (P15): 3 saatte bir topla → OPUS-MT ile Türkçeye çevir → haberler.json'u "veri" dalına commit'le. Ücretsiz (GitHub Actions).
+# Kod main'de (sitenin deposundan gelir), veri yalnızca "veri" dalında: kod gönderimleriyle çakışmaz.
+# Google/Firebase bağlantısı yok (kullanıcı 2026-11-15, "C"): depo herkese açık, site raw.githubusercontent.com/abb1066/rezero-haber/veri/haberler.json'u okur.
+# Elle çalıştırma (Actions > haber > Run workflow): "kuru" işaretliyse dosyaya yazmaz ve commit atmaz, çevirileri günlüğe döker.
+name: haber
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      kuru:
+        description: "Kuru çalıştırma (haberler.json'a yazma)"
+        type: boolean
+        default: true
+permissions:
+  contents: write
+concurrency:
+  group: haber
+  cancel-in-progress: false
+jobs:
+  haber:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: önceki veri (veri dalı)
+        run: |
+          if git fetch --depth=1 origin veri 2>/dev/null; then git show FETCH_HEAD:haberler.json > haberler.json || true; git show FETCH_HEAD:atla.json > atla.json || true; else echo "veri dalı henüz yok"; fi
+      - id: topla
+        run: node is.mjs topla
+      - if: steps.topla.outputs.aday != '0'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - if: steps.topla.outputs.aday != '0'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-opus-mt-v1
+      - if: steps.topla.outputs.aday != '0'
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1
+          pip install -r requirements.txt
+      - if: steps.topla.outputs.aday != '0'
+        run: python cevir.py is/adaylar.json is/ceviri.json
+      - if: steps.topla.outputs.aday != '0'
+        run: node is.mjs yaz ${{ (github.event_name == 'workflow_dispatch' && inputs.kuru) && '--kuru' || '' }}
+      - if: steps.topla.outputs.aday != '0' && !(github.event_name == 'workflow_dispatch' && inputs.kuru)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p /tmp/veri && cp haberler.json atla.json /tmp/veri/ && rm -f haberler.json atla.json
+          if git fetch origin veri 2>/dev/null; then git checkout -q -B veri FETCH_HEAD; else git checkout -q --orphan veri && git rm -rfq . ; fi
+          cp /tmp/veri/haberler.json /tmp/veri/atla.json .
+          git add -f haberler.json atla.json
+          if git diff --cached --quiet; then echo "değişiklik yok"; else git commit -q -m "Haberler güncellendi" && git push -q origin veri; fi

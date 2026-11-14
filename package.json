@@ -1,0 +1,14 @@
+{
+  "name": "rezero-takip-haber-is",
+  "description": "Re:Zero haber işi (P15): GitHub Actions'ta 3 saatte bir RSS/resmî sayfa, OPUS-MT ile Türkçe, depodaki haberler.json'a yazar",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node test/cekirdek-test.mjs && node test/is-test.mjs && node test/dosya-test.mjs",
+    "kuru": "node kuru.mjs"
+  },
+  "dependencies": {}
+}

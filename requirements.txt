@@ -1,0 +1,5 @@
+# Haber çevirisi (cevir.py). torch ayrıca CPU sürümüyle kurulur (iş akışında, --index-url https://download.pytorch.org/whl/cpu).
+# Sürümler sabit: OPUS-MT modelleri pytorch_model.bin ile geliyor; transformers 4.46 + torch 2.5 bunu yükler.
+transformers==4.46.3
+sentencepiece==0.2.0
+sacremoses==0.1.1

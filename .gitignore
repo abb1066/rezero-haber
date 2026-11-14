@@ -1,0 +1,5 @@
+node_modules/
+is/
+__pycache__/
+haberler.json
+atla.json
