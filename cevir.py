@@ -46,7 +46,7 @@ def main(giris, cikis):
     with open(giris, encoding="utf-8") as f:
         adaylar = json.load(f)
     sonuc = {}
-    for dil in ("en", "ja"):
+    for dil in ("en",):  # Japonca yalnızca Claude ile (OPUS-MT ja→en→tr anlamsız çıktı verdi, 2026-11-15)
         grup = [a for a in adaylar if a.get("dil") == dil]
         if not grup:
             continue

@@ -6,7 +6,7 @@
 // Google/Firebase bağlantısı YOK (kullanıcı 2026-11-15 "C"): depo herkese açık, site haberler.json'u raw.githubusercontent.com'dan okur.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { KAYNAKLAR, adaylar as adaySec, kategoriKural, ozetKaynak, belge, haberId } from "./haber-cekirdek.js";
+import { KAYNAKLAR, adaylar as adaySec, kategoriKural, ozetKaynak, belge, haberId, olayKimlik } from "./haber-cekirdek.js";
 import { topla, ogGorsel, bekle } from "./haber-getir.js";
 import { dosyaDepo, DOSYA_FV } from "./dosya-depo.mjs";
 
@@ -33,24 +33,29 @@ export async function toplaIs({ db, simdi = Date.now(), kaynaklar = KAYNAKLAR, g
   for (const h of liste) {
     if (!h.gorsel && h.kaynakId !== "resmi") { h.gorsel = await gorselGetir(h.url); await bekle(bekleMs); }
     cikti.push({ id: h.id, kaynak: h.kaynak, kaynakId: h.kaynakId, dil: h.dil, baslik: h.baslik, url: h.url, tarih: h.tarih, gorsel: h.gorsel || "",
-      kategori: kategoriKural(h), ozetKaynak: ozetKaynak(h) });
+      kategori: kategoriKural(h), ozetKaynak: ozetKaynak(h), metin: String(h.metin || "").slice(0, 1200) });
   }
   return { durum, adaylar: cikti };
 }
 
 // ceviri = { id: {baslik, ozet} }. Çevirisi gelmeyen aday atlanır (sonraki turda yeniden denenir);
 // çeviri geldi ama boşsa haberAtla'ya yazılır (sonsuz döngü olmasın). Var olan belgeye dokunulmaz (create).
+// Claude çıktısında (yz): ilgili:false → haberAtla "ilgisiz"; aynı olay 10 gün içinde zaten varsa yeni kart yerine o karta "diğer kaynak".
 export async function yazIs({ db, adaylar, ceviri, fv }) {
-  let eklenen = 0, bos = 0, bekleyen = 0;
+  let eklenen = 0, bos = 0, bekleyen = 0, ilgisiz = 0, birlesen = 0;
+  const son = (await db.collection("haberler").orderBy("tarih", "desc").limit(200).get()).docs.map(d => ({ id: d.id, olay: d.get("olay") || "", ms: fv.ms ? fv.ms(d.get("tarih")) : 0 }));
   for (const h of adaylar) {
     const c = ceviri && ceviri[h.id];
     if (!c) { bekleyen++; continue; }
+    if (c.ilgili === false) { await db.doc("haberAtla/" + h.id).set({ at: fv.sunucu(), neden: "ilgisiz", baslik: String(h.baslik).slice(0, 200) }); ilgisiz++; continue; }
     const b = belge(h, c);
     if (!b) { await db.doc("haberAtla/" + h.id).set({ at: fv.sunucu(), neden: "ceviri-bos", baslik: String(h.baslik).slice(0, 200) }); bos++; continue; }
-    try { await db.doc("haberler/" + h.id).create({ ...b, tarih: fv.zaman(new Date(b.tarih)), eklendi: fv.sunucu() }); eklenen++; }
+    const ms = Date.parse(b.tarih) || 0, es = b.olay && son.find(x => x.olay === b.olay && Math.abs(x.ms - ms) < 10 * 864e5);
+    if (es) { await db.doc("haberler/" + es.id).update({ digerKaynaklar: fv.ekle({ kaynak: h.kaynak, url: h.url }) }); await db.doc("haberAtla/" + h.id).set({ at: fv.sunucu(), neden: "ayni-olay", olay: b.olay }); birlesen++; continue; }
+    try { await db.doc("haberler/" + h.id).create({ ...b, tarih: fv.zaman(new Date(b.tarih)), eklendi: fv.sunucu() }); eklenen++; son.unshift({ id: h.id, olay: b.olay, ms }); }
     catch (e) { if (e.code !== 6) throw e; } // 6 = ALREADY_EXISTS
   }
-  return { eklenen, bos, bekleyen };
+  return { eklenen, bos, bekleyen, ilgisiz, birlesen };
 }
 
 // ---- komut satırı ----
@@ -65,9 +70,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     fs.writeFileSync(new URL("adaylar.json", klasor), JSON.stringify(adaylar, null, 1));
     console.log("yeni aday: " + adaylar.length); adaylar.forEach(a => console.log("  " + a.dil + " · " + a.kategori + " · " + a.baslik.slice(0, 90)));
     if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, "aday=" + adaylar.length + "\n");
+  } else if (kom === "claude") {
+    const adaylar = JSON.parse(fs.readFileSync(new URL("adaylar.json", klasor), "utf8"));
+    const key = process.env.ANTHROPIC_API_KEY;
+    const { claudeOzetle } = await import("./claude.mjs");
+    let client = null; if (key) { const { default: Anthropic } = await import("@anthropic-ai/sdk"); client = new Anthropic({ apiKey: key }); }
+    const r = await claudeOzetle({ client, adaylar });
+    if (r.tamam) fs.writeFileSync(new URL("ceviri.json", klasor), JSON.stringify(r.ceviri, null, 1));
+    console.log(key ? "Claude: " + r.tamam + "/" + adaylar.length + (r.durdu ? " (durdu)" : "") : "Claude anahtarı yok, yedek çeviriye geçilecek (yalnızca İngilizce)");
+    if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, "tamam=" + r.tamam + "\n");
   } else if (kom === "yaz") {
     const adaylar = JSON.parse(fs.readFileSync(new URL("adaylar.json", klasor), "utf8"));
-    const ceviri = JSON.parse(fs.readFileSync(new URL("ceviri.json", klasor), "utf8"));
+    let ceviri = {}; try { ceviri = JSON.parse(fs.readFileSync(new URL("ceviri.json", klasor), "utf8")); } catch {}
     if (kuru) {
       for (const h of adaylar) { const b = belge(h, ceviri[h.id]); console.log("\n[" + h.dil + "] " + h.baslik + "\n  → " + (b ? b.baslik + "\n  → " + b.ozet + "\n  (" + b.kategori + ")" : "(çeviri yok)")); }
       console.log("\nkuru çalıştırma: haberler.json'a yazılmadı");
@@ -75,5 +89,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       console.log("haber turu", await yazIs({ db, adaylar, ceviri, fv: DOSYA_FV }));
       db.kaydet();
     }
-  } else { console.error("kullanım: node is.mjs topla | yaz [--kuru]"); process.exit(2); }
+  } else { console.error("kullanım: node is.mjs topla | claude | yaz [--kuru]"); process.exit(2); }
 }

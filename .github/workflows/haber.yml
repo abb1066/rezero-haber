@@ -1,4 +1,5 @@
-# Re:Zero haberleri (P15): 3 saatte bir topla → OPUS-MT ile Türkçeye çevir → haberler.json'u "veri" dalına commit'le. Ücretsiz (GitHub Actions).
+# Re:Zero haberleri (P15): 3 saatte bir topla → Claude (Haiku) ile Türkçe başlık/özet (anahtar: depo gizli değişkeni ANTHROPIC_API_KEY)
+# → haberler.json'u "veri" dalına commit'le. Claude hiç sonuç vermezse yalnızca İngilizce haberler OPUS-MT ile; Japonca beklemede kalır (kötü çeviri yazılmaz).
 # Kod main'de (sitenin deposundan gelir), veri yalnızca "veri" dalında: kod gönderimleriyle çakışmaz.
 # Google/Firebase bağlantısı yok (kullanıcı 2026-11-15, "C"): depo herkese açık, site raw.githubusercontent.com/abb1066/rezero-haber/veri/haberler.json'u okur.
 # Elle çalıştırma (Actions > haber > Run workflow): "kuru" işaretliyse dosyaya yazmaz ve commit atmaz, çevirileri günlüğe döker.
@@ -26,26 +27,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: önceki veri (veri dalı)
         run: |
           if git fetch --depth=1 origin veri 2>/dev/null; then git show FETCH_HEAD:haberler.json > haberler.json || true; git show FETCH_HEAD:atla.json > atla.json || true; else echo "veri dalı henüz yok"; fi
       - id: topla
         run: node is.mjs topla
-      - if: steps.topla.outputs.aday != '0'
+      - id: claude
+        if: steps.topla.outputs.aday != '0'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node is.mjs claude
+      - if: steps.topla.outputs.aday != '0' && steps.claude.outputs.tamam == '0'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
-      - if: steps.topla.outputs.aday != '0'
+      - if: steps.topla.outputs.aday != '0' && steps.claude.outputs.tamam == '0'
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: hf-opus-mt-v1
-      - if: steps.topla.outputs.aday != '0'
+      - if: steps.topla.outputs.aday != '0' && steps.claude.outputs.tamam == '0'
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1
           pip install -r requirements.txt
-      - if: steps.topla.outputs.aday != '0'
+      - if: steps.topla.outputs.aday != '0' && steps.claude.outputs.tamam == '0'
         run: python cevir.py is/adaylar.json is/ceviri.json
       - if: steps.topla.outputs.aday != '0'
         run: node is.mjs yaz ${{ (github.event_name == 'workflow_dispatch' && inputs.kuru) && '--kuru' || '' }}

@@ -157,9 +157,9 @@ export function belge(h, c) {
   if (!baslik) return null;
   return {
     baslik, ozet: String(c.ozet || "").replace(/\s+/g, " ").trim().slice(0, 400),
-    kategori: KATEGORILER.includes(h.kategori) ? h.kategori : kategoriKural(h),
+    kategori: KATEGORILER.includes(c.kategori) ? c.kategori : KATEGORILER.includes(h.kategori) ? h.kategori : kategoriKural(h),
     kaynak: h.kaynak, url: h.url, gorsel: guvenliHttps(h.gorsel), tarih: h.tarih || new Date().toISOString(),
-    orijinalBaslik: String(h.baslik).slice(0, 200), dil: h.dil, ceviri: "makine",
-    olay: "", digerKaynaklar: [],
+    orijinalBaslik: String(h.baslik).slice(0, 200), dil: h.dil, ceviri: c.yz ? "yz" : "makine",
+    olay: olayKimlik(c.olay), digerKaynaklar: [],
   };
 }

@@ -7,8 +7,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node test/cekirdek-test.mjs && node test/is-test.mjs && node test/dosya-test.mjs",
+    "test": "node test/cekirdek-test.mjs && node test/is-test.mjs && node test/dosya-test.mjs && node test/claude-test.mjs",
     "kuru": "node kuru.mjs"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "zod": "^3.25.0"
+  }
 }

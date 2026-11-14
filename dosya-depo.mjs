@@ -4,7 +4,7 @@
 // İçeride tarih = tarihMs (sayı). En yeni 200 haber tutulur; atla.json en çok 3000 kayıt.
 import fs from "node:fs";
 
-export const DOSYA_FV = { sunucu: () => new Date().toISOString(), zaman: d => d.getTime() };
+export const DOSYA_FV = { sunucu: () => new Date().toISOString(), zaman: d => d.getTime(), ms: t => +t || 0, ekle: x => ({ __ekle: x }) };
 
 export function dosyaDepo(klasor) {
   const yol = ad => new URL(ad, klasor);
@@ -26,6 +26,7 @@ export function dosyaDepo(klasor) {
       return {
         set: async v => { t[ad].set(id, { ...v, id }); },
         create: async v => { if (t[ad].has(id)) { const e = new Error("zaten var"); e.code = 6; throw e; } t[ad].set(id, { ...v, id }); },
+        update: async v => { const d = t[ad].get(id); if (!d) return; for (const k in v) { if (v[k] && v[k].__ekle) { const l = Array.isArray(d[k]) ? d[k] : []; if (!l.some(x => JSON.stringify(x) === JSON.stringify(v[k].__ekle))) l.push(v[k].__ekle); d[k] = l.slice(0, 6); } else d[k] = v[k]; } },
       };
     },
     kaydet() {
