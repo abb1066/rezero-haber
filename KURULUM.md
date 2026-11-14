@@ -1,13 +1,13 @@
 # Haber işi (Re:Zero Takip)
 
-Bu depo 3 saatte bir Re:Zero haberlerini toplar. Haberleri açık kaynak OPUS-MT modeliyle Türkçeye çevirir ve **`veri` dalındaki** `haberler.json` dosyasına yazar. Site (https://re-zero-takip.web.app) haberleri bu dosyadan okur.
+Bu depo 3 saatte bir Re:Zero haberlerini toplar. Claude (Haiku) ile Türkçe başlık ve kısa özet yazar (Claude yoksa yalnızca İngilizce haberler açık kaynak OPUS-MT ile çevrilir) ve **`veri` dalındaki** `haberler.json` dosyasına yazar. Site (https://re-zero-takip.web.app) haberleri bu dosyadan okur.
 
 - `main` dalında yalnızca kod var.
 - `veri` dalını iş kendisi oluşturur ve günceller; elle değiştirme.
 
-- **Ücret:** Yok. GitHub Actions herkese açık depoda ücretsiz.
+- **Ücret:** GitHub Actions herkese açık depoda ücretsiz. Claude haber başına ~0,0004 $ (kendi API kredinden).
 - **Bağlantı:** Google ya da Firebase hesabı gerekmez.
-- **Anahtar:** Depoda gizli bilgi yok.
+- **Anahtar:** Depoda gizli bilgi yok. Claude anahtarı yalnızca depo gizli değişkeninde: **Settings → Secrets and variables → Actions → Secrets → `ANTHROPIC_API_KEY`** (değeri kimse göremez).
 
 ## Kurulum (bir kez)
 1. Depo **herkese açık** olmalı: **Settings → General → Danger Zone → Change visibility → Make public**. Site dosyayı ancak böyle okuyabilir.
