@@ -1,4 +1,4 @@
-# Re:Zero haberleri (P15): 3 saatte bir topla → Claude (Haiku) ile Türkçe başlık/özet (anahtar: depo gizli değişkeni ANTHROPIC_API_KEY)
+# Re:Zero haberleri (P15): saatte bir topla (2026-11-15: 3 saatten saate; GitHub zamanlayıcısı turları atlayabiliyor) → Claude (Haiku) ile Türkçe başlık/özet (anahtar: depo gizli değişkeni ANTHROPIC_API_KEY)
 # → haberler.json'u "veri" dalına commit'le. Claude hiç sonuç vermezse yalnızca İngilizce haberler OPUS-MT ile; Japonca beklemede kalır (kötü çeviri yazılmaz).
 # Kod main'de (sitenin deposundan gelir), veri yalnızca "veri" dalında: kod gönderimleriyle çakışmaz.
 # Google/Firebase bağlantısı yok (kullanıcı 2026-11-15, "C"): depo herkese açık, site raw.githubusercontent.com/abb1066/rezero-haber/veri/haberler.json'u okur.
@@ -6,7 +6,7 @@
 name: haber
 on:
   schedule:
-    - cron: "17 */3 * * *"
+    - cron: "41 * * * *"
   workflow_dispatch:
     inputs:
       kuru:
