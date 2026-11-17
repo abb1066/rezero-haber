@@ -1,4 +1,7 @@
-# Re:Zero haberleri (P15): saatte bir topla (2026-11-15: 3 saatten saate; GitHub zamanlayıcısı turları atlayabiliyor) → Claude (Haiku) ile Türkçe başlık/özet (anahtar: depo gizli değişkeni ANTHROPIC_API_KEY)
+# Re:Zero haberleri (P15): saatte bir topla (2026-11-15: 3 saatten saate). 2026-11-17: GitHub saatlik tetiklerin ancak ~1/7'sini
+# başlatıyordu (turlar 5–10 saat arayla). Artık 10 dakikada bir tetiklenir; "zaman" işi o UTC saati için toplama yapıldıysa
+# (önbellekte haber-saat-YYYYMMDDHH işareti) asıl işi atlar. İşaret yalnızca başarılı ve kuru olmayan turdan sonra yazılır.
+# → Claude (Haiku) ile Türkçe başlık/özet (anahtar: depo gizli değişkeni ANTHROPIC_API_KEY)
 # → haberler.json'u "veri" dalına commit'le. Claude hiç sonuç vermezse yalnızca İngilizce haberler OPUS-MT ile; Japonca beklemede kalır (kötü çeviri yazılmaz).
 # Kod main'de (sitenin deposundan gelir), veri yalnızca "veri" dalında: kod gönderimleriyle çakışmaz.
 # Google/Firebase bağlantısı yok (kullanıcı 2026-11-15, "C"): depo herkese açık, site raw.githubusercontent.com/abb1066/rezero-haber/veri/haberler.json'u okur.
@@ -6,7 +9,7 @@
 name: haber
 on:
   schedule:
-    - cron: "41 * * * *"
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
     inputs:
       kuru:
@@ -19,7 +22,26 @@ concurrency:
   group: haber
   cancel-in-progress: false
 jobs:
+  zaman:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      saat: ${{ steps.s.outputs.saat }}
+      yapildi: ${{ steps.c.outputs.cache-hit }}
+    steps:
+      - id: s
+        run: echo "saat=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - id: c
+        if: github.event_name == 'schedule'
+        uses: actions/cache/restore@v4
+        with:
+          path: .saat
+          key: haber-saat-${{ steps.s.outputs.saat }}
+          lookup-only: true
+      - run: echo "saat ${{ steps.s.outputs.saat }}, bu saat yapıldı mı: ${{ steps.c.outputs.cache-hit || 'hayır' }}"
   haber:
+    needs: zaman
+    if: needs.zaman.outputs.yapildi != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -66,3 +88,11 @@ jobs:
           cp /tmp/veri/haberler.json /tmp/veri/atla.json .
           git add -f haberler.json atla.json
           if git diff --cached --quiet; then echo "değişiklik yok"; else git commit -q -m "Haberler güncellendi" && git push -q origin veri; fi
+      - name: bu saat yapıldı işareti
+        if: success() && !(github.event_name == 'workflow_dispatch' && inputs.kuru)
+        run: mkdir -p .saat && date -u > .saat/t
+      - if: success() && !(github.event_name == 'workflow_dispatch' && inputs.kuru)
+        uses: actions/cache/save@v4
+        with:
+          path: .saat
+          key: haber-saat-${{ needs.zaman.outputs.saat }}

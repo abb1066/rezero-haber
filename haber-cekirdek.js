@@ -8,6 +8,8 @@ export const KAYNAKLAR = [
   { id: "crn", ad: "Crunchyroll News", tur: "rss", url: "https://cr-news-api-service.prd.crunchyrollsvc.com/v1/en-US/rss", dil: "en", gecikme: 1000 },
   { id: "resmi", ad: "Re:Zero resmî sitesi", tur: "resmi", url: "https://re-zero-anime.jp/news/", dil: "ja", gecikme: 1000 },
   { id: "aa", ad: "Anime!Anime!", tur: "rss", url: "https://animeanime.jp/rss/index.rdf", dil: "ja", gecikme: 1000 },
+  // PR TIMES (kullanıcı 2026-11-17: mağaza/kafe iş birlikleri kaçıyordu, ör. karaoke iş birliği resmî sitede yoktu). Genel bülten beslemesi, robots izin veriyor; yalnızca Re:Zero geçenler alınır.
+  { id: "prt", ad: "PR TIMES", tur: "rss", url: "https://prtimes.jp/index.rdf", dil: "ja", gecikme: 1000 },
 ];
 export const KATEGORILER = ["Anime", "Manga", "Light Novel", "Oyun", "Etkinlik"];
 
