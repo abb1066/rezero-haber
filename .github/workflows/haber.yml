@@ -38,7 +38,8 @@ jobs:
           path: .saat
           key: haber-saat-${{ steps.s.outputs.saat }}
           lookup-only: true
-      - run: echo "saat ${{ steps.s.outputs.saat }}, bu saat yapıldı mı: ${{ steps.c.outputs.cache-hit || 'hayır' }}"
+      - run: |
+          echo "saat ${{ steps.s.outputs.saat }} / bu saat yapildi mi = ${{ steps.c.outputs.cache-hit || 'hayir' }}"
   haber:
     needs: zaman
     if: needs.zaman.outputs.yapildi != 'true'
