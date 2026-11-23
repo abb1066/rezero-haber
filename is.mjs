@@ -83,7 +83,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const adaylar = JSON.parse(fs.readFileSync(new URL("adaylar.json", klasor), "utf8"));
     let ceviri = {}; try { ceviri = JSON.parse(fs.readFileSync(new URL("ceviri.json", klasor), "utf8")); } catch {}
     if (kuru) {
-      for (const h of adaylar) { const b = belge(h, ceviri[h.id]); console.log("\n[" + h.dil + "] " + h.baslik + "\n  → " + (b ? b.baslik + "\n  → " + b.ozet + "\n  (" + b.kategori + ")" : "(çeviri yok)")); }
+      for (const h of adaylar) { const b = belge(h, ceviri[h.id]); console.log("\n[" + h.dil + "] " + h.baslik + "\n  → " + (b ? b.baslik + "\n  → " + b.ozet + "\n  EN: " + (b.baslikEn ? b.baslikEn + (b.ozetEn ? " | " + b.ozetEn : "") : "(yok: sitede Türkçe + TR notu)") + "\n  (" + b.kategori + ")" : "(çeviri yok)")); }
       console.log("\nkuru çalıştırma: haberler.json'a yazılmadı");
     } else {
       console.log("haber turu", await yazIs({ db, adaylar, ceviri, fv: DOSYA_FV }));

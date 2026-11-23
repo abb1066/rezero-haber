@@ -153,12 +153,22 @@ export function ozetKaynak(h) {
 
 export const olayKimlik = s => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
 
+// İngilizce alanlar (P35, İngilizce sayfa): baslikEn/ozetEn. İngilizce kaynakta kaynağın kendi başlığı ve çevrilecek ham özeti (ozetKaynak, ≤280 karakter;
+// çeviri hattı yalnızca Türkçeyi üretir); Japonca kaynakta çeviri hattının İngilizcesi (Claude: c.baslikEn/c.ozetEn, OPUS-MT ja-en: aynı alanlar).
+// Başlık yoksa ikisi de yazılmaz, özet yoksa yalnızca ozetEn yazılmaz; site eksik olanı Türkçeyle "TR" notuyla gösterir. Eski belgelerde bu alanlar yoktur.
+const bosluk = (x, n) => String(x || "").replace(/\s+/g, " ").trim().slice(0, n);
+export function ingilizce(h, c) {
+  const baslikEn = h.dil === "en" ? bosluk(h.baslik, 160) : bosluk(c && c.baslikEn, 160);
+  const ozetEn = h.dil === "en" ? bosluk(h.ozetKaynak, 300) : bosluk(c && c.ozetEn, 300);
+  return { ...(baslikEn ? { baslikEn } : {}), ...(baslikEn && ozetEn ? { ozetEn } : {}) };
+}
+
 // Firestore belgesi. c = makine çevirisi {baslik, ozet}. Çeviri boşsa belge yok (null).
 export function belge(h, c) {
   const baslik = String(c && c.baslik || "").replace(/\s+/g, " ").trim().slice(0, 160);
   if (!baslik) return null;
   return {
-    baslik, ozet: String(c.ozet || "").replace(/\s+/g, " ").trim().slice(0, 400),
+    baslik, ozet: String(c.ozet || "").replace(/\s+/g, " ").trim().slice(0, 400), ...ingilizce(h, c),
     kategori: KATEGORILER.includes(c.kategori) ? c.kategori : KATEGORILER.includes(h.kategori) ? h.kategori : kategoriKural(h),
     kaynak: h.kaynak, url: h.url, gorsel: guvenliHttps(h.gorsel), tarih: h.tarih || new Date().toISOString(),
     orijinalBaslik: String(h.baslik).slice(0, 200), dil: h.dil, ceviri: c.yz ? "yz" : "makine",

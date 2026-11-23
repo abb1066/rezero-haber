@@ -13,6 +13,8 @@ const Ozet = z.object({
   ozet: z.string(),
   kategori: z.enum(["Anime", "Manga", "Light Novel", "Oyun", "Etkinlik"]),
   olay: z.string(),
+  baslikEn: z.string(),
+  ozetEn: z.string(),
 });
 const SISTEM = "Bir Türk Re:Zero hayran sitesi için haber editörüsün. Yalnızca verilen metindeki bilgiyi kullan; tahmin, söylenti ya da olmayan bilgi ekleme. Kaynağın cümlelerini kopyalamadan kendi sözcüklerinle yaz.";
 
@@ -22,6 +24,7 @@ export function istem(h) {
 - baslik: Türkçe, en çok 90 karakter, haberin özü; özgün cümle, çeviri kokusu olmasın. Özel adları (kişi, etkinlik, mekân) yaygın Latin yazımıyla doğru yaz (ör. ラグーナテンボス = Laguna Ten Bosch), uydurma. Türkçe cümle düzeni: yalnızca ilk harf ve özel adlar büyük (Her Kelime Büyük yazma). Japon adlarını Batı sırasıyla yaz (Satomi Arai, Yusuke Kobayashi). Başlıkta ve özette Japonca karakter kullanma (展 = sergi).
 - ozet: Türkçe 2-3 cümle, en çok 320 karakter; kaynağın cümlelerini kopyalama, kendi sözcüklerinle anlat; olmayan bilgi ekleme; spoiler (hikâye olayları) verme. Metin kısaysa yalnızca bilineni 1 cümleyle yaz; metnin kısa ya da eksik olduğunu, neyin belirtilmediğini ASLA söyleme. Yabancı terimleri Türkçeleştir (can badge = rozet, goods = ürün, acrylic stand = akrilik stand, talk show = söyleşi, sticker = çıkartma).
 - kategori: Anime, Manga, Light Novel, Oyun, Etkinlik içinden en uygun tek değer. Mağaza, kafe, sergi, sahne, konser, iş birliği etkinliktir. Re:Zero resmî anime sitesinden gelen görsel, bölüm, yayın, ürün haberleri aksi açıkça yazmadıkça Anime'dir; Light Novel yalnızca roman/cilt/yazarın kitabıyla ilgiliyse.
+- baslikEn ve ozetEn: YALNIZCA Japonca kaynakta doldur (İngilizce kaynakta ikisini de boş bırak: kaynağın kendi İngilizcesi ayrıca saklanır). baslikEn: İngilizce, en çok 90 karakter, haberin özü; özel adları yaygın Latin yazımıyla yaz, Japon adlarını Batı sırasıyla, Japonca karakter kullanma. ozetEn: İngilizce 2-3 cümle, en çok 300 karakter; baslik ve ozet'in İngilizcesi gibi aynı içerik ve aynı kurallar (kendi sözcüklerinle, olmayan bilgi ve spoiler yok, kaynak metninde neyin eksik olduğunu söyleme).
 - olay: Bu haberin anlattığı olayın kısa kimliği; küçük harf İngilizce, tireli, en çok 6 sözcük (ör. anime-season-5-announced, ln-volume-47-release). Aynı olayı anlatan başka kaynak aynı kimliği üretmeli.
 
 Başlık: ${h.baslik}
@@ -33,10 +36,12 @@ Metin: ${String(h.metin || h.ozetKaynak || "(yok)").slice(0, 1200)}`;
 // "kısa olduğundan … bilinmektedir", "belirtilemiyor"), Japonca/Çince karakterler, fazla boşluk.
 const IC_NOT = /(kaynakta (yer )?(almıyor|bulunmuyor|yok)|metin(in)? (kısa|eksik)|kısa kesil|kısa olduğundan|yalnızca bu duyuru bilin|belirtil(e)?mi(yor|ştir)|ayrıntı(lar(ı)?)? (verilmemiş|verilmedi|yer almıyor|bilinmiyor)|gövde metni)/i;
 const CJK = /[\u3040-\u30ff\u3400-\u9fff\uff66-\uff9f]/g;
+const IC_NOT_EN = /(not (mentioned|specified|provided|stated)|source text (is|was) (short|incomplete)|no (further|other) details|(is|are) not (given|available) in the (source|text))/i;
 export function temizle(z) {
   const duz = x => String(x || "").replace(CJK, "").replace(/\s+([.,;:!?])/g, "$1").replace(/\s{2,}/g, " ").trim();
+  const en = x => duz(x).split(/(?<=[.!?])\s+(?=[A-Z0-9"'(])/).map(c => c.trim()).filter(c => c && !IC_NOT_EN.test(c)).join(" ");
   const cumleler = duz(z.ozet).split(/(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ0-9"'(])/); // yalnızca cümle sonu + boşluk + büyük harf/rakamda böl (16.45, 1.650 bozulmaz)
-  return { ...z, baslik: duz(z.baslik), ozet: cumleler.map(c => c.trim()).filter(c => c && !IC_NOT.test(c)).join(" ") };
+  return { ...z, baslik: duz(z.baslik), ozet: cumleler.map(c => c.trim()).filter(c => c && !IC_NOT.test(c)).join(" "), baslikEn: duz(z.baslikEn), ozetEn: en(z.ozetEn) };
 }
 
 async function bir(client, h) {

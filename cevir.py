@@ -54,14 +54,17 @@ def main(giris, cikis):
         for a in grup:
             metin += [a.get("baslik", ""), a.get("ozetKaynak", "")]
         try:
+            en = metin
             if dil == "ja":
-                metin = cevir(metin, "ja-en")
+                en = metin = cevir(metin, "ja-en")  # Japonca: ara İngilizce de saklanır (sitenin İngilizce sayfası)
             tr = cevir(metin, "en-tr")
         except Exception as e:  # bir yol bozulursa öteki dil yine yazılsın
             print("çeviri hatası (" + dil + "): " + repr(e), file=sys.stderr)
             continue
         for k, a in enumerate(grup):
             sonuc[a["id"]] = {"baslik": tr[2 * k], "ozet": tr[2 * k + 1]}
+            if dil == "ja":
+                sonuc[a["id"]].update({"baslikEn": en[2 * k], "ozetEn": en[2 * k + 1]})
             print("[" + dil + "] " + a.get("baslik", "")[:80] + "\n   -> " + tr[2 * k][:120])
     with open(cikis, "w", encoding="utf-8") as f:
         json.dump(sonuc, f, ensure_ascii=False, indent=1)
